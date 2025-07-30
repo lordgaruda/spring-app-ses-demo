@@ -22,6 +22,7 @@
         <aws.sdk.version>2.20.50</aws.sdk.version>
         <angus.mail.version>2.0.3</angus.mail.version>
         <jakarta.mail.version>2.0.1</jakarta.mail.version>
+        <guava.version>32.1.2-jre</guava.version>
     </properties>
 
     <dependencies>
@@ -38,11 +39,11 @@
             <version>${angus.mail.version}</version>
         </dependency>
 
-        <!-- AWS SES SDK -->
+        <!-- Guava -->
         <dependency>
-            <groupId>software.amazon.awssdk</groupId>
-            <artifactId>ses</artifactId>
-            <version>${aws.sdk.version}</version>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>${guava.version}</version>
         </dependency>
 
         <!-- Jakarta Mail -->

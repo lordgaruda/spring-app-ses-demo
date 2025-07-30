@@ -3,12 +3,13 @@ package com.example.emailqueue.sender;
 import com.example.emailqueue.model.EmailMessage;
 import com.example.emailqueue.queue.EmailQueue;
 import com.example.emailqueue.service.SesEmailClient;
+import com.google.common.util.concurrent.RateLimiter;
+
 import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 @Service
 public class EmailSenderWorker {
@@ -23,18 +24,31 @@ public class EmailSenderWorker {
 
     @PostConstruct
     public void startWorker() {
-        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-        scheduler.scheduleAtFixedRate(() -> {
-            try {
-                for (int i = 0; i < 14; i++) {
+        ScheduledExecutorService executor = Executors.newScheduledThreadPool(5); // 5 parallel workers
+        RateLimiter rateLimiter = RateLimiter.create(14.0); // 14 emails/sec
+
+        executor.submit(() -> {
+            while (true) {
+                try {
                     EmailMessage email = emailQueue.dequeue();
-                    sesEmailClient.sendEmail(email);
-                    System.out.println("✅ Sent: " + email.getSubject());
+
+                    // Acquire a permit (waits if limit reached)
+                    rateLimiter.acquire();
+
+                    executor.submit(() -> {
+                        try {
+                            sesEmailClient.sendEmail(email);
+                            System.out.println("✅ Sent: " + email.getSubject());
+                        } catch (Exception e) {
+                            System.err.println("❌ Error sending to " + email.getTo() + ": " + e.getMessage());
+                        }
+                    });
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
                 }
-            } catch (Exception e) {
-                System.err.println("❌ Error: " + e.getMessage());
             }
-        }, 0, 1, TimeUnit.SECONDS);
+        });
     }
 
 }
